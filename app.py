@@ -17,7 +17,7 @@ def main():
 # результат запроса пользователя
 @app.route('/askAPI/find_email/<user_input_email>', methods=['GET'])
 def email_exists_response(user_input_email: str):
-    print(CACHE.get(user_input_email))
+    # print(CACHE.get(user_input_email))
     response = test_email_reg(user_input_email)
 
     if response is True:
