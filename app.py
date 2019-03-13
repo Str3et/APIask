@@ -18,22 +18,26 @@ def main():
 @app.route('/askAPI/find_email/<user_input_email>', methods=['GET'])
 def email_exists_response(user_input_email: str):
     # print(CACHE.get(user_input_email))
-    response = test_email_reg(user_input_email)
-
-    if response is True:
-        add_result(user_input_email, 'exists')
-        CACHE.set(user_input_email, 'exists')
+    # проверка кэша, если такой адрес есть, выдавать из него, без запроса к ask.fm
+    if CACHE.get(user_input_email) == 'exists':
         return jsonify({'server_response': 'exists'})
 
-    elif response is False:
-        add_result(user_input_email, 'not_found')
-        return jsonify({'server_response': 'not_found'})
-
     else:
-        return jsonify(response)
+        response = test_email_reg(user_input_email)
+        if response is True:
+            add_result(user_input_email, 'exists')  # запись в БД
+            CACHE.set(user_input_email, 'exists')  # запись в кэш успешного запроса
+            return jsonify({'server_response': 'exists'})
+
+        elif response is False:
+            add_result(user_input_email, 'not_found')
+            return jsonify({'server_response': 'not_found'})
+
+        else:
+            return jsonify(response)
 
 
-# 404 error handler
+# 404 error
 @app.errorhandler(404)
 def not_found(error):
     response = {'server_response': 'error', 'reason': 'page_not_found'}
@@ -42,11 +46,3 @@ def not_found(error):
 
 if __name__ == '__main__':
     app.run()
-
-
-# задание следующее:
-# написать апи на фласк, которое проверяет наличие аккаунта по почте на сайте ask.fm
-# и так же ищет аккаунт по додоменной части почтового адреса (то что до собаки)
-# сделать кэширование успешных запросов на час
-# готовую работу выложит на гитхаб
-# и развернуть на любом хостинге для тестов

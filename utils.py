@@ -8,11 +8,13 @@ import time
 webdriver_settings = webdriver.ChromeOptions()
 webdriver_settings.add_argument('--headless')
 webdriver_settings.add_argument('--disable-gpu')
+webdriver_settings.add_argument('--no-sandbox')
+webdriver_settings.add_argument('--disable-dev-shm-usage')
 
 
 # проверка введного пользователем email`a на регистрацию на сайте.
 def test_email_reg(email):
-    mail = re.findall(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0]+$', email.lower())  # проверка соответствия
+    mail = re.findall(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0]+$', email.lower())  # проверка соответствия адреса
 
     if mail:
         driver_browser = webdriver.Chrome(chrome_options=webdriver_settings)  # вэбдрайвер Chrome для селениума.
@@ -20,9 +22,10 @@ def test_email_reg(email):
         form_email = driver_browser.find_element_by_class_name('inputForm')  # поиск по html
         form_email.send_keys(email)  # ввод email`a
         form_email.submit()  # отправка формы
-        time.sleep(2)
+        time.sleep(2)  # задержка для браузера, для прогрузки формы
 
         try:
+            # поиск события, которое выдает JS после проверки формы
             form_email = driver_browser.find_element_by_xpath("//*[@class='flash-message notice']")
             if form_email:
                 return True
@@ -32,7 +35,7 @@ def test_email_reg(email):
             driver_browser.close()
 
     else:
-        return {'server_response': 'error', 'reason': 'invalid_input'}
+        return {'server_response': 'error', 'reason': 'invalid_input'}  # возврат при ошибочном ввоже адреса
 
 
 # Добавление нового документа в БД
