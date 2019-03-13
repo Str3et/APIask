@@ -1,4 +1,5 @@
 import re
+import os
 from selenium import webdriver
 
 from config import BASE_URL
@@ -17,7 +18,8 @@ def test_email_reg(email):
     mail = re.findall(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0]+$', email.lower())  # проверка соответствия адреса
 
     if mail:
-        driver_browser = webdriver.Chrome(chrome_options=webdriver_settings)  # вэбдрайвер Chrome для селениума.
+        # вэбдрайвер Chrome для селениума
+        driver_browser = webdriver.Chrome(os.getcwd() + '/chromedriver', chrome_options=webdriver_settings)
         driver_browser.get(BASE_URL)
         form_email = driver_browser.find_element_by_class_name('inputForm')  # поиск по html
         form_email.send_keys(email)  # ввод email`a
