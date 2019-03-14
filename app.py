@@ -1,7 +1,7 @@
 from flask import Flask
 from flask import jsonify, render_template, make_response
 
-from utils import test_email_reg, test_account_reg, add_account_result, add_email_result
+from utils import test_user_input, add_result
 from config import CACHE
 
 app = Flask(__name__)
@@ -14,35 +14,16 @@ def main():
 
 
 # результат запроса пользователя по email
-@app.route('/askAPI/find_email/<user_input_email>', methods=['GET'])
-def email_exists_response(user_input_email: str):
-    user_input_account = user_input_email.split('@')[0]
-
+@app.route('/askAPI/find_info/<user_input>', methods=['GET'])
+def email_acc_exists_response(user_input: str):
     # проверка кэша, если такой адрес есть, выдавать из него, без запроса к ask.fm
-    if CACHE.get(user_input_email) == 'exists':
-        return jsonify({'server_response': 'exists'})
+    if CACHE.get(user_input) is not None:
+        return jsonify(CACHE.get(user_input))
 
-    else:
-        response_email = test_email_reg(user_input_email)
-        if response_email == {'server_response': 'error', 'reason': 'invalid_input'}:
-            return jsonify(response_email)
-        response_account = test_account_reg(user_input_account)
-        if response_email and response_account is True:
-            return jsonify({'email_response': 'exists', 'account_response': 'exists'})
-            # add_email_result(user_input_email, 'exists')  # запись в БД
-            # CACHE.set(user_input_email, response)  # запись в кэш успешного запроса
-
-        if response_email and response_account is False:
-            return jsonify({'email_response': 'not_found', 'account_response': 'not_found'})
-
-        if response_email is True and response_account is False:
-            return jsonify({'email_response': 'exists', 'account_response': 'not_found'})
-
-        if response_email is False and response_account is True:
-            return jsonify({'email_response': 'not_found', 'account_response': 'exists'})
-
-        # else:
-        #     return jsonify(response_email)
+    response = test_user_input(user_input)
+    CACHE.set(user_input, response)  # запись в кэш успешного запроса
+    add_result(response)  # запись в БД
+    return jsonify(response)
 
 
 # 404 error
@@ -53,4 +34,4 @@ def not_found(error):
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0', port=80)
