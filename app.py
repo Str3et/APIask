@@ -16,41 +16,33 @@ def main():
 # результат запроса пользователя по email
 @app.route('/askAPI/find_email/<user_input_email>', methods=['GET'])
 def email_exists_response(user_input_email: str):
+    user_input_account = user_input_email.split('@')[0]
+
     # проверка кэша, если такой адрес есть, выдавать из него, без запроса к ask.fm
     if CACHE.get(user_input_email) == 'exists':
         return jsonify({'server_response': 'exists'})
 
     else:
-        response = test_email_reg(user_input_email)
-        if response is True:
-            add_email_result(user_input_email, 'exists')  # запись в БД
-            CACHE.set(user_input_email, 'exists')  # запись в кэш успешного запроса
-            return jsonify({'server_response': 'exists'})
+        response_email = test_email_reg(user_input_email)
+        if response_email == {'server_response': 'error', 'reason': 'invalid_input'}:
+            return jsonify(response_email)
+        response_account = test_account_reg(user_input_account)
+        if response_email and response_account is True:
+            return jsonify({'email_response': 'exists', 'account_response': 'exists'})
+            # add_email_result(user_input_email, 'exists')  # запись в БД
+            # CACHE.set(user_input_email, response)  # запись в кэш успешного запроса
 
-        elif response is False:
-            add_email_result(user_input_email, 'not_found')
-            return jsonify({'server_response': 'not_found'})
+        if response_email and response_account is False:
+            return jsonify({'email_response': 'not_found', 'account_response': 'not_found'})
 
-        else:
-            return jsonify(response)
+        if response_email is True and response_account is False:
+            return jsonify({'email_response': 'exists', 'account_response': 'not_found'})
 
+        if response_email is False and response_account is True:
+            return jsonify({'email_response': 'not_found', 'account_response': 'exists'})
 
-# результат запроса пользователя по аккаунту
-@app.route('/askAPI/find_account/<user_input_account>', methods=['GET'])
-def account_exists_response(user_input_account: str):
-    if CACHE.get(user_input_account) == 'exists':
-        return jsonify({'server_response': 'exists'})
-
-    else:
-        response = test_account_reg(user_input_account)
-        if response is True:
-            add_account_result(user_input_account, 'exists')
-            CACHE.set(user_input_account, 'exists')
-            return jsonify({'server_response': 'exists'})
-
-        else:
-            add_account_result(user_input_account, 'not_found')
-            return jsonify({'server_response': 'not_found'})
+        # else:
+        #     return jsonify(response_email)
 
 
 # 404 error
@@ -61,4 +53,4 @@ def not_found(error):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80)
+    app.run()

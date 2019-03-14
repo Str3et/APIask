@@ -22,7 +22,7 @@ def test_email_reg(email):
 
     if mail:
         # вэбдрайвер Chrome для селениума
-        driver_browser = webdriver.Chrome(os.getcwd() + '/chromedriver', chrome_options=webdriver_settings)
+        driver_browser = webdriver.Chrome(chrome_options=webdriver_settings)
         driver_browser.get(BASE_URL_EMAIL)
         form_email = driver_browser.find_element_by_class_name('inputForm')  # поиск по html
         form_email.send_keys(email)  # ввод email`a
@@ -53,7 +53,6 @@ def add_account_result(account, status):
 
 
 def test_account_reg(account_name):
-    # post_result = requests.post(BASE_URL_ACCOUNT, data=account_name)
     test = requests.get(BASE_URL_ACCOUNT + account_name)
     dom = BeautifulSoup(test.text)  # получаем html страницы
     title = str(dom.select('title')[0])  # забираем строку tittle`a
