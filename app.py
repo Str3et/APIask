@@ -21,9 +21,12 @@ def email_acc_exists_response(user_input: str):
         return jsonify(CACHE.get(user_input))
 
     response = test_user_input(user_input)
-    CACHE.set(user_input, response)  # запись в кэш успешного запроса
-    add_result(response)  # запись в БД
-    return jsonify(response)
+    if response.get('reason'):
+        return jsonify(response)
+    else:
+        CACHE.set(user_input, response)  # запись в кэш успешного запроса
+        add_result(response)  # запись в БД
+        return jsonify(response)
 
 
 # 404 error
