@@ -42,6 +42,9 @@ def test_user_input(user_input):
             driver_browser.close()
 
         user_input_account = user_input.split('@')[0]  # отделяем додоменное имя для теста
+        replace_symbol = re.compile("[^a-zA-Z,\d]")  # формула для замены символов в логине
+        user_input_account = replace_symbol.sub("_", user_input_account)  # замена символов
+
         test = requests.get(BASE_URL_ACCOUNT + user_input_account)  # переход на страницу аккаунта
         dom = BeautifulSoup(test.text)  # получаем html страницы
         title = str(dom.select('title')[0])  # забираем строку tittle`a
