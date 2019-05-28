@@ -1,43 +1,92 @@
 import re
 import os
 import requests
+import string
+import random
 from bs4 import BeautifulSoup
 
 from selenium import webdriver
+from selenium.webdriver.support.ui import Select
 
-from config import BASE_URL_EMAIL, BASE_URL_ACCOUNT, TITLE_ACCOUNT
+from config import BASE_URL_ACCOUNT, TITLE_ACCOUNT, BASE_URL_FIND_LINK, BASE_URL_NEW_ACC
 from mongo_db import data_db
 import time
 
 webdriver_settings = webdriver.ChromeOptions()
-webdriver_settings.add_argument('--headless')
-webdriver_settings.add_argument('--disable-gpu')
-webdriver_settings.add_argument('--no-sandbox')
-webdriver_settings.add_argument('--disable-dev-shm-usage')
+# webdriver_settings.add_argument('--headless')
+# webdriver_settings.add_argument('--disable-gpu')
+# webdriver_settings.add_argument('--no-sandbox')
+# webdriver_settings.add_argument('--disable-dev-shm-usage')
 
 
-# проверка введных пользователем данных на сайте.
-def test_user_input(user_input):
-    # проверка соответствия email адреса
+def test_user_input(user_input: str):
+    """ Проверяем регистрацию на сайте ask.fm с почты, введенной пользователем.
+
+    :param user_input: str
+        email адрес, который пользователь хочет проверить
+    :return: dict
+        результат проверки, обернутый в словарь, для передачи в JSON
+    """
+
+    # проверка соответствия email адреса стандарту
     mail = re.findall(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0]+$', user_input.lower())
     response = {}  # будущий ответ на запрос
 
     if mail:
         # вэбдрайвер Chrome для селениума
         driver_browser = webdriver.Chrome(os.getcwd() + '/chromedriver', chrome_options=webdriver_settings)
-        driver_browser.get(BASE_URL_EMAIL)
-        form_email = driver_browser.find_element_by_class_name('inputForm')  # поиск по html
-        form_email.send_keys(user_input)  # ввод email`a
-        form_email.submit()  # отправка формы
-        time.sleep(2)  # задержка браузера, для прогрузки формы
+        rnd_email = ''.join(random.choices(string.ascii_letters, k=10))
 
         try:
-            # поиск события, которое выдает JS после проверки формы
-            form_email = driver_browser.find_element_by_xpath("//*[@class='flash-message notice']")
-            if form_email:
-                response['email_response'] = 'exists'
+
+            driver_browser.get(BASE_URL_NEW_ACC)  # переход на страницу входа
+            time.sleep(2)
+
+            new_acc_form_submit = driver_browser.find_element_by_id('signupNewForm')  # форма регистрации
+
+            new_acc_form = driver_browser.find_element_by_id('user_email')
+            new_acc_form.send_keys(f'{rnd_email}@aruy.ru')
+            time.sleep(1)
+
+            new_acc_form = driver_browser.find_element_by_id('user_name')
+            new_acc_form.send_keys(f'{rnd_email}')
+            time.sleep(1)
+
+            new_acc_form = driver_browser.find_element_by_id('user_password')
+            new_acc_form.send_keys('yura2525ARUY')
+            time.sleep(1)
+
+            new_acc_form = Select(driver_browser.find_element_by_id('user_gender_id'))
+            new_acc_form.select_by_value('2')
+            time.sleep(1)
+
+            new_acc_form = Select(driver_browser.find_element_by_id('date_day'))
+            new_acc_form.select_by_value('25')
+            new_acc_form = Select(driver_browser.find_element_by_id('date_month'))
+            new_acc_form.select_by_value('5')
+            new_acc_form = Select(driver_browser.find_element_by_id('date_year'))
+            new_acc_form.select_by_value('1990')
+            time.sleep(2)
+
+            new_acc_form_submit.submit()
+            time.sleep(5)
+
+            driver_browser.get(BASE_URL_FIND_LINK)  # переход на страницу поиска друзей
+            form_find_link = driver_browser.find_element_by_name('q')
+            form_find_link.send_keys(user_input)  # ввод email`a для поиска
+            time.sleep(2)
+
+            account_link = driver_browser.find_elements_by_css_selector('a.userItem_content')
+            if account_link:
+                for acc in account_link:
+                    response['account_link'] = str(acc.get_attribute('href'))  # получение ссылки на аккаунт
+
+            else:
+                response['account_link'] = 'email not registered'  # почта не зарегистрирована
+
         except:
-            response['email_response'] = 'not_found'
+            response['account_link'] = 'the entrance is blocked'  # заблокировали вход на сайт
+
         finally:
             driver_browser.close()
 
@@ -50,16 +99,25 @@ def test_user_input(user_input):
         title = str(dom.select('title')[0])  # забираем строку tittle`a
 
         if title == TITLE_ACCOUNT:
-            response['account_response'] = 'not_found'
+            response['account_name'] = 'not_found'
         else:
-            response['account_response'] = 'exists'
+            response['account_name'] = 'exists'
 
         return response  # возвращаем результат проведенной проверки
 
     else:
-        return {'server_response': 'error', 'reason': 'invalid_input'}  # возврат при ошибочном ввоже адреса
+        return {'server_response': 'error', 'reason': 'invalid_input'}  # возврат при ошибочном вводе адреса
 
 
-# Добавление нового документа в БД
-def add_result(result):
-    data_db.insert_one({'email_response': result['email_response'], 'account_response': result['account_response']})
+def add_result(result: dict):
+    """ Добавление данных в БД.
+
+    :param result: dict
+        словарь с результатами проверки пользовательского ввода
+    """
+    result = data_db.insert_one({'account_link': result['account_link'], 'account_name': result['account_name']})
+    print(result.inserted_id)
+
+#
+# if __name__ == '__main__':
+#     print(test_user_input('mamka@mail.ru'))
