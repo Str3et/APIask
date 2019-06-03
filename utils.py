@@ -14,9 +14,7 @@ import time
 
 webdriver_settings = webdriver.ChromeOptions()
 # webdriver_settings.add_argument('--headless')
-# webdriver_settings.add_argument('--disable-gpu')
-# webdriver_settings.add_argument('--no-sandbox')
-# webdriver_settings.add_argument('--disable-dev-shm-usage')
+
 
 
 def test_user_input(user_input: str):
@@ -81,11 +79,19 @@ def test_user_input(user_input: str):
                 for acc in account_link:
                     response['account_link'] = str(acc.get_attribute('href'))  # получение ссылки на аккаунт
 
-            else:
-                response['account_link'] = 'email not registered'  # почта не зарегистрирована
+
+            driver_browser.get(response['account_link'] + '/avatar')
+
+            # avatar_name = driver_browser.find_element_by_xpath("//span[@class='userName']")
+
+            # with open(os.path.join("image", f'avatar_{avatar_name.text}.png'), "wb") as file:
+            #     file.write(driver_browser.find_element_by_class_name('userAvatar').screenshot_as_png)
+
+            time.sleep(2)
+
 
         except:
-            response['account_link'] = 'the entrance is blocked'  # заблокировали вход на сайт
+            response['request canceled'] = 'sorry, the entrance is blocked'  # заблокировали вход на сайт
 
         finally:
             driver_browser.close()
@@ -99,9 +105,9 @@ def test_user_input(user_input: str):
         title = str(dom.select('title')[0])  # забираем строку tittle`a
 
         if title == TITLE_ACCOUNT:
-            response['account_name'] = 'not_found'
+            response['exists'] = False
         else:
-            response['account_name'] = 'exists'
+            response['exists'] = True
 
         return response  # возвращаем результат проведенной проверки
 
@@ -115,9 +121,5 @@ def add_result(result: dict):
     :param result: dict
         словарь с результатами проверки пользовательского ввода
     """
-    result = data_db.insert_one({'account_link': result['account_link'], 'account_name': result['account_name']})
-    print(result.inserted_id)
-
-#
-# if __name__ == '__main__':
-#     print(test_user_input('mamka@mail.ru'))
+    data_db.insert_one(dict(result))
+    # print(res.inserted_id)
